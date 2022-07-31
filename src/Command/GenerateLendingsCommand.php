@@ -41,23 +41,23 @@ class GenerateLendingsCommand extends Command
         $this->Automations = $this->fetchTable('Automations');
         $this->Lendings = $this->fetchTable('Lendings');
 
-        $automations = $this->Automations->find()->where(['active' => true]);
+        $automations = $this->Automations->find()->contain(['People'])->where(['active' => true]);
         foreach ($automations as $automation) {
             $now = new DateTime(date('Y-m-d H:i:00'));
             if ($automation->is_due && $automation->aplied_on != $now) {
                 // Si justo debe aplicarse en este minuto y no se ha aplicado ya
-                $this->log("{$automation->name} is due", 'info');
+                $this->log("{$automation->name} ({$automation->person->name}) is due", 'info');
                 $this->__generate($automation, $now);
             } else if (is_null($automation->aplied_on) && $automation->created < $automation->previous_run_date) {
                 // Si nunca se ha ejecutado y debía haberse ejecutado después de la fecha de creación
-                $this->log("{$automation->name} must be executed for the first time", 'info');
+                $this->log("{$automation->name} ({$automation->person->name}) must be executed for the first time", 'info');
                 $this->__generate($automation, $now);
             } else if (!is_null($automation->aplied_on) && $automation->aplied_on < $automation->previous_run_date) {
                 // O si debió haberse ejecutado después de la última ejecución
-                $this->log("{$automation->name} must be executed again", 'info');
+                $this->log("{$automation->name} ({$automation->person->name}) must be executed again", 'info');
                 $this->__generate($automation, $now);
             } else {
-                $this->log("Skipping {$automation->name} until {$automation->next_run_date->format('Y-m-d H:i:s')}", 'info');
+                $this->log("Skipping {$automation->name} ({$automation->person->name}) until {$automation->next_run_date->format('Y-m-d H:i:s')}", 'info');
             }
         }
     }
@@ -65,13 +65,13 @@ class GenerateLendingsCommand extends Command
     private function __generate($automation, $now)
     {
         if (!$this->Lendings->generate($automation)) {
-            $this->log("Lending generation for {$automation->name} failed", 'error');
+            $this->log("Lending generation for {$automation->name} ({$automation->person->name}) failed", 'error');
         } else {
-            $this->log("{$automation->name} generated", 'info');
+            $this->log("{$automation->name} ({$automation->person->name}) generated", 'info');
             $automation->aplied_on = $now->format('Y-m-d H:i:s');
             if (!$this->Automations->save($automation)) {
                 $errors = json_encode($automation->getErrors());
-                $this->log("{$automation->name} aplied_on could not be updated - {$errors}", 'error');
+                $this->log("{$automation->name} ({$automation->person->name}) aplied_on could not be updated - {$errors}", 'error');
             }
         }
     }
