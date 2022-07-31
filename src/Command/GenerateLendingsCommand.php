@@ -52,7 +52,7 @@ class GenerateLendingsCommand extends Command
                 // Si nunca se ha ejecutado y debía haberse ejecutado después de la fecha de creación
                 $this->log("{$automation->name} must be executed for the first time", 'info');
                 $this->__generate($automation, $now);
-            } else if ($automation->aplied_on < $automation->previous_run_date) {
+            } else if (!is_null($automation->aplied_on) && $automation->aplied_on < $automation->previous_run_date) {
                 // O si debió haberse ejecutado después de la última ejecución
                 $this->log("{$automation->name} must be executed again", 'info');
                 $this->__generate($automation, $now);

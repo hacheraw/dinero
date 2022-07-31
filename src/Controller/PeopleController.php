@@ -18,8 +18,7 @@ class PeopleController extends AppController
      */
     public function home()
     {
-        $people = $this->People->find('all')->contain(['Lendings']);
-
+        $people = $this->People->find('all')->contain(['Lendings'])->orderAsc('name');
         $this->set(compact('people'));
     }
 
